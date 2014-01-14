@@ -1,0 +1,7 @@
+{
+	"description": "My module template",
+	"min_platform_version": "v2.1.0",
+	"namespace": "tcp",
+	"platform_version": "v2.1.0",
+	"version": "0.2"
+}
