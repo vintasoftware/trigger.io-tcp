@@ -15,6 +15,7 @@ public class SocketThread extends Thread {
 
 	private String ip;
 	private Integer port;
+	private int readBufferSize;
 	private Socket socket;
 	private BufferedReader in;
 	private BufferedOutputStream out;
@@ -22,8 +23,9 @@ public class SocketThread extends Thread {
 	public SocketThread(String ip, Integer port) throws UnknownHostException, IOException {
 		this.ip = ip;
 		this.port = port;
+		this.readBufferSize = 8192;
 		socket = new Socket(ip, port);
-		in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+		in = new BufferedReader(new InputStreamReader(socket.getInputStream()), this.readBufferSize);
 		out = new BufferedOutputStream(socket.getOutputStream());
 	}
 	
@@ -44,15 +46,18 @@ public class SocketThread extends Thread {
 	@Override
 	public void run() {
 		for (;;) {
-			int received;
+			char[] received = new char[this.readBufferSize];
+			
 			try {
-				received = in.read();
+				int receivedCount = in.read(received);
 				
-				if (received != -1) {
+				if (receivedCount != -1) {
+					String data = String.copyValueOf(received, 0, receivedCount);
+					
 					JsonObject dataJson = new JsonObject();
 					dataJson.addProperty("ip", ip);
 					dataJson.addProperty("port", port);
-					dataJson.addProperty("data", received);
+					dataJson.addProperty("data", data);
 					ForgeApp.event("tcp.onData", dataJson);
 				} else {
 					break;

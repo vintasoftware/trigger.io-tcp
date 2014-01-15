@@ -171,5 +171,10 @@ forge.tcp = (function () {
 
   exports.Socket = Socket;
 
+  // Events
+  //forge.internal.addEventListener("tcp.onData", function (dataJson) {
+  //    
+  //});
+
   return exports;
 }());
