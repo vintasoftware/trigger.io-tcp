@@ -2,12 +2,12 @@ package io.trigger.forge.android.modules.tcp;
 
 import io.trigger.forge.android.core.ForgeParam;
 import io.trigger.forge.android.core.ForgeTask;
+import io.trigger.forge.android.util.Base64;
+import io.trigger.forge.android.util.Base64DecoderException;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 public class API {
@@ -46,26 +46,21 @@ public class API {
 	public static void sendByteArray(final ForgeTask task,
 			@ForgeParam("ip") final String ip,
 			@ForgeParam("port") final int port,
-			@ForgeParam("data") final JsonArray data) {
+			@ForgeParam("dataBase64") final String dataBase64) {
 		task.performAsync(new Runnable() {
 			@Override
 			public void run() {
 				try { 
-					char[] dataAsCharArray = new char[data.size()]; 
-					int i = 0;
-					
-					for (JsonElement e : data) {
-						dataAsCharArray[i] = (char) e.getAsInt();
-						i++;
-					}
-					
-					facade.sendByteArray(ip, port, dataAsCharArray);
+					byte[] data = Base64.decode(dataBase64);
+					facade.sendByteArray(ip, port, data);
 					task.success();
+				} catch (Base64DecoderException e) {
+					task.error(jsonException(e.getMessage(), e.getMessage(), "BAD_INPUT", "BAD_BASE64"));
 				} catch (IllegalArgumentException e) {
 					task.error(jsonException(e.getMessage(), e.getMessage(), "BAD_INPUT", "BAD_IP"));
 				} catch (IOException e) {
 					task.error(jsonException("IO error while sending data", e.getMessage(), "UNEXPECTED_FAILURE", "IO_ERROR"));
-				}
+				} 
 			}
 		});
 	}

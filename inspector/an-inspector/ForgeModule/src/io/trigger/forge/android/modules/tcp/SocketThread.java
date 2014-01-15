@@ -2,11 +2,10 @@ package io.trigger.forge.android.modules.tcp;
 
 import io.trigger.forge.android.core.ForgeApp;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
@@ -18,17 +17,17 @@ public class SocketThread extends Thread {
 	private Integer port;
 	private Socket socket;
 	private BufferedReader in;
-	private BufferedWriter out;
+	private BufferedOutputStream out;
 	
 	public SocketThread(String ip, Integer port) throws UnknownHostException, IOException {
 		this.ip = ip;
 		this.port = port;
 		socket = new Socket(ip, port);
 		in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-		out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+		out = new BufferedOutputStream(socket.getOutputStream());
 	}
 	
-	public synchronized void sendByteArray(char[] data) throws IOException {
+	public synchronized void sendByteArray(byte[] data) throws IOException {
 		out.write(data);
 	}
 	

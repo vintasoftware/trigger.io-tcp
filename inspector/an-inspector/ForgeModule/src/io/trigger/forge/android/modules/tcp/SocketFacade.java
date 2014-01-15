@@ -29,7 +29,7 @@ public class SocketFacade {
 		socketMap.put(ipAndPort, socketThread);
 	}
 	
-	public synchronized void sendByteArray(String ip, Integer port, char[] data) throws IllegalArgumentException, IOException {
+	public synchronized void sendByteArray(String ip, Integer port, byte[] data) throws IllegalArgumentException, IOException {
 		IPAndPort ipAndPort = new IPAndPort(ip, port);
 		SocketThread socketThread = socketMap.get(ipAndPort);
 		
