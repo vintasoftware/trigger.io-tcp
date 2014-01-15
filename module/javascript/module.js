@@ -20,12 +20,6 @@ forge.tcp = (function () {
       otherArr.forEach(function (v) { this.push(v); }, arr);
   }
 
-  function removePadding(dataBase64) {
-    var x = dataBase64;
-    for (var i = x.length - 1; i > 0 && x[i] == '='; i--) {}
-    return dataBase64.slice(0, i + 1);
-  }
-
   // Pipeline object
   var Pipeline = function () {
     this.fnList = [];
@@ -77,9 +71,8 @@ forge.tcp = (function () {
 
     this.ip = ip;
     this.port = port;
-    this.maxBase64Length = config.maxBase64Length || 65536;
-    // make sure maxBase64Length % 4 == 0 (base64 strings should be chunked 4 bytes at a time)
-    this.maxBase64Length = this.maxBase64Length - (this.maxBase64Length % 4);
+    this.charset = config.charset || 'UTF-8';
+    this.maxBufferLength = config.maxBufferLength || 65536;
     this.buffer = [];
     this.totalBufferLength = 0;
     this.pipeline = new Pipeline();
@@ -91,46 +84,42 @@ forge.tcp = (function () {
     forge.internal.call('tcp.createSocket', {ip: this.ip, port: this.port}, success, error);
   };
 
-  Socket.prototype.sendByteArrayNow = function (dataBase64, success, error) {
-    forge.internal.call('tcp.sendByteArray', {ip: this.ip, port: this.port, dataBase64: dataBase64}, success, error);
+  Socket.prototype.sendNow = function (data, success, error) {
+    forge.internal.call('tcp.sendData', {ip: this.ip, port: this.port, data: data, charset: this.charset}, success, error);
   };
 
-  Socket.prototype.sendBufferFn = function (callback) {
-    var _this = this;
+  Socket.prototype.makeSenderFn = function (data) {
     var error = this.onError;
+    
+    return function (callback) {
+      this.sendNow(data, callback, error);
+    };
+  };
 
+  Socket.prototype.sendBufferHead = function () {
     var data = this.buffer.shift(0);
     this.totalBufferLength -= data.length;
-
-    this.sendByteArrayNow(data, sendMoreIfNeeded, this.onError);
-
-    function sendMoreIfNeeded () {
-      if (_this.buffer.length > 0) {
-        _this.sendBufferFn(callback);
-      } else {
-        callback();
-      }
-    }
+    
+    var sendFn = this.makeSenderFn(data);
+    this.pipeline.queue(this, sendFn);
   };
 
-  Socket.prototype.sendByteArray = function (dataBase64) {
-    var pipeline = this.pipeline;
-
-    if (dataBase64.length > this.maxBase64Length) {
-      // split dataBase64 into chunks and add to buffer
-      var dataBase64NoPad = removePadding(dataBase64);
-      var splitData = split(dataBase64NoPad, this.maxBase64Length);
-      extend(this.buffer, splitData);
+  Socket.prototype.send = function (data) {
+    if (data.length > this.maxBufferLength) {
+      var dataChunks = split(data, this.maxBufferLength);
+      extend(this.buffer, dataChunks);
+    } else if (this.buffer.length > 0) {
+      var last = this.buffer[this.buffer.length - 1];
+      var lastAndNew = last.concat(data);
+      var lastAndNewChunks = split(lastAndNew, this.maxBufferLength);
+      extend(this.buffer, lastAndNewChunks);
     } else {
-      this.buffer.push(dataBase64);
+      this.buffer.push(data);
     }
-    this.totalBufferLength += dataBase64.length;
+    this.totalBufferLength += data.length;
 
-    if (this.totalBufferLength >= this.maxBase64Length) {
-      if (!this.pipeline.hasNext()) {
-        // if there is not a next consumer in pipeline, add a new one
-        pipeline.queue(this, this.sendBufferFn);
-      }
+    while (this.totalBufferLength > this.maxBufferLength) {
+      this.sendBufferHead();
     }
   };
 
@@ -139,19 +128,16 @@ forge.tcp = (function () {
   };
 
   Socket.prototype.flushFn = function (callback) {
-    var _this = this;
     var error = this.onError;
-
-    if (this.buffer.length > 0) {
-      this.sendBufferFn(function () {
-        _this.flushNow(callback, error);
-      });
-    } else {
-      this.flushNow(callback, error);
-    }
+    
+    this.flushNow(callback, error);
   };
 
   Socket.prototype.flush = function () {
+    while (this.totalBufferLength > 0) {
+      this.sendBufferHead();
+    }
+
     this.pipeline.queue(this, this.flushFn);
   };
 
@@ -160,20 +146,15 @@ forge.tcp = (function () {
   };
 
   Socket.prototype.closeFn = function (callback) {
-    var _this = this;
     var error = this.onError;
 
-    this.closeNow(closeCallback, error);
-
-    function closeCallback () {
-      callback();
-      _this.onClose();
-    }
+    this.closeNow(callback, error);
   };
 
   Socket.prototype.close = function () {
     this.flush();
     this.pipeline.queue(this, this.closeFn);
+    this.pipeline.queue(this, this.onClose);
   };
 
   exports.Socket = Socket;

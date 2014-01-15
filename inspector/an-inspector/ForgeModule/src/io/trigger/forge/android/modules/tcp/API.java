@@ -2,10 +2,9 @@ package io.trigger.forge.android.modules.tcp;
 
 import io.trigger.forge.android.core.ForgeParam;
 import io.trigger.forge.android.core.ForgeTask;
-import io.trigger.forge.android.util.Base64;
-import io.trigger.forge.android.util.Base64DecoderException;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.UnknownHostException;
 
 import com.google.gson.JsonObject;
@@ -43,19 +42,20 @@ public class API {
 		});
 	}
 	
-	public static void sendByteArray(final ForgeTask task,
+	public static void sendData(final ForgeTask task,
 			@ForgeParam("ip") final String ip,
 			@ForgeParam("port") final int port,
-			@ForgeParam("dataBase64") final String dataBase64) {
+			@ForgeParam("data") final String data,
+			@ForgeParam("charset") final String charset) {
 		task.performAsync(new Runnable() {
 			@Override
 			public void run() {
 				try { 
-					byte[] data = Base64.decode(dataBase64);
-					facade.sendByteArray(ip, port, data);
+					byte[] dataByteArray = data.getBytes(charset);
+					facade.sendByteArray(ip, port, dataByteArray);
 					task.success();
-				} catch (Base64DecoderException e) {
-					task.error(jsonException(e.getMessage(), e.getMessage(), "BAD_INPUT", "BAD_BASE64"));
+				} catch (UnsupportedEncodingException e) {
+					task.error(jsonException(e.getMessage(), e.getMessage(), "BAD_INPUT", "BAD_CHARSET"));
 				} catch (IllegalArgumentException e) {
 					task.error(jsonException(e.getMessage(), e.getMessage(), "BAD_INPUT", "BAD_IP"));
 				} catch (IOException e) {
