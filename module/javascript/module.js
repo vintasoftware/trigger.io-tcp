@@ -76,12 +76,24 @@ forge.tcp = (function () {
     this.buffer = [];
     this.totalBufferLength = 0;
     this.pipeline = new Pipeline();
+    this.onConnect = config.onConnect || function (callback) { callback(); };
     this.onError = config.onError || function () {};
     this.onClose = config.onClose || function () {};
   };
 
-  Socket.prototype.connect = function (success, error) {
+  Socket.prototype.connectNow = function (success, error) {
     forge.internal.call('tcp.createSocket', {ip: this.ip, port: this.port}, success, error);
+  };
+
+  Socket.prototype.connectFn = function (callback) {
+    var error = this.onError;
+
+    this.connectNow(callback, error);
+  };
+
+  Socket.prototype.connect = function () {
+    this.pipeline.queue(this, this.connectFn);
+    this.pipeline.queue(this, this.onConnect);
   };
 
   Socket.prototype.sendNow = function (data, success, error) {
@@ -109,7 +121,7 @@ forge.tcp = (function () {
       var dataChunks = split(data, this.maxBufferLength);
       extend(this.buffer, dataChunks);
     } else if (this.buffer.length > 0) {
-      var last = this.buffer[this.buffer.length - 1];
+      var last = this.buffer.pop();
       var lastAndNew = last.concat(data);
       var lastAndNewChunks = split(lastAndNew, this.maxBufferLength);
       extend(this.buffer, lastAndNewChunks);
