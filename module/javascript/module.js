@@ -4,6 +4,34 @@ forge.tcp = (function () {
   var exports = {};
 
   // Helper functions
+  function noop() {
+  
+  }
+
+  function arrayfyArguments(args) {
+    var argsArr = [];
+    
+    for (var i = 0; i < args.length; i++) {
+        argsArr.push(args[i]);
+    }
+
+    return argsArr;
+  }
+    
+  function convertToContinuation(fnContext, fn) {
+    return function () {
+      // callback should be the last arg,
+      // other args should be given to original fn
+      var args = arrayfyArguments(arguments);
+      var callback = args.pop();
+
+      fn.apply(fnContext, args);
+      callback();
+    };
+  }
+
+  var noopContinuation = convertToContinuation(null, noop);
+
   function split(str, len) {
     var chunks = [],
         i = 0,
@@ -37,17 +65,25 @@ forge.tcp = (function () {
   Pipeline.prototype.callNextFn = function () {
     if (this.hasNext()) {
       var nextFn = this.fnList.shift();
-      nextFn();
+
+      // call nextFn preserving given arguments
+      var args = arrayfyArguments(arguments);
+      nextFn.apply(null, args); // null preserves binding
     } else {
       this.running = false;
     }
   };
 
-  Pipeline.prototype.callAndChain = function (fn) {
+  Pipeline.prototype.callAndChain = function (fn, args) {
     var callNextFn = this.callNextFn.bind(this);
     
     this.running = true;
-    fn(callNextFn);
+
+    // call fn with callNextFn as a callback,
+    // without losing other arguments for fn
+    args = arrayfyArguments(args);
+    args.push(callNextFn);
+    fn.apply(null, args); // null preserves binding
   };
 
   Pipeline.prototype.queue = function (fnContext, fn) {
@@ -56,11 +92,11 @@ forge.tcp = (function () {
 
     if (!this.isRunning()) {
       // if its not running, call now!
-      this.callAndChain(fn);
+      this.callAndChain(fn, []);
     } else {
       // if its running, queue
       this.fnList.push(function () {
-        _this.callAndChain(fn);
+        _this.callAndChain(fn, arguments);
       });
     }
   };
@@ -76,13 +112,17 @@ forge.tcp = (function () {
     this.buffer = [];
     this.totalBufferLength = 0;
     this.pipeline = new Pipeline();
-    this.onConnect = config.onConnect || function (callback) { callback(); };
-    this.onError = config.onError || function () {};
-    this.onClose = config.onClose || function () {};
+    
+    var onConnect = config.onConnect || noop;
+    var onError = config.onError || noop;
+    var onClose = config.onClose || noop;
+    this.onConnect = convertToContinuation(this, onConnect);
+    this.onError = convertToContinuation(this, onError);
+    this.onClose = convertToContinuation(this, onClose);
   };
 
   Socket.prototype.connectNow = function (success, error) {
-    forge.internal.call('tcp.createSocket', {ip: this.ip, port: this.port}, success, error);
+    forge.internal.call('tcp.createSocket', {ip: this.ip, port: this.port, charset: this.charset}, success, error);
   };
 
   Socket.prototype.connectFn = function (callback) {
@@ -93,11 +133,12 @@ forge.tcp = (function () {
 
   Socket.prototype.connect = function () {
     this.pipeline.queue(this, this.connectFn);
+    this.pipeline.queue(this, noopContinuation);
     this.pipeline.queue(this, this.onConnect);
   };
 
   Socket.prototype.sendNow = function (data, success, error) {
-    forge.internal.call('tcp.sendData', {ip: this.ip, port: this.port, data: data, charset: this.charset}, success, error);
+    forge.internal.call('tcp.sendData', {ip: this.ip, port: this.port, data: data}, success, error);
   };
 
   Socket.prototype.makeSenderFn = function (data) {
@@ -114,6 +155,7 @@ forge.tcp = (function () {
     
     var sendFn = this.makeSenderFn(data);
     this.pipeline.queue(this, sendFn);
+    this.pipeline.queue(this, noopContinuation);
   };
 
   Socket.prototype.send = function (data) {
@@ -151,6 +193,24 @@ forge.tcp = (function () {
     }
 
     this.pipeline.queue(this, this.flushFn);
+    this.pipeline.queue(this, noopContinuation);
+  };
+
+  Socket.prototype.readNow = function (success, error) {
+    forge.internal.call('tcp.readData', {ip: this.ip, port: this.port}, success, error);
+  };
+
+  Socket.prototype.readFn = function (callback) {
+    var error = this.onError;
+    
+    this.readNow(callback, error);
+  };
+
+  Socket.prototype.read = function (readCallback) {
+    var readCallbackCont = convertToContinuation(this, readCallback);
+
+    this.pipeline.queue(this, this.readFn);
+    this.pipeline.queue(this, readCallbackCont);
   };
 
   Socket.prototype.closeNow = function (success, error) {
@@ -166,15 +226,11 @@ forge.tcp = (function () {
   Socket.prototype.close = function () {
     this.flush();
     this.pipeline.queue(this, this.closeFn);
+    this.pipeline.queue(this, noopContinuation);
     this.pipeline.queue(this, this.onClose);
   };
 
   exports.Socket = Socket;
-
-  // Events
-  //forge.internal.addEventListener("tcp.onData", function (dataJson) {
-  //    
-  //});
 
   return exports;
 }());

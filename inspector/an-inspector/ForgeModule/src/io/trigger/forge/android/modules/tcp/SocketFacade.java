@@ -1,7 +1,10 @@
 package io.trigger.forge.android.modules.tcp;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.UnknownHostException;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,56 +19,68 @@ public class SocketFacade {
 		return instance;
 	}
 	
-	private Map<IPAndPort, SocketThread> socketMap;
+	private Map<IPAndPort, SocketWrapper> socketMap;
 	
 	public SocketFacade() {
-		socketMap = new HashMap<IPAndPort, SocketThread>();
+		socketMap = new HashMap<IPAndPort, SocketWrapper>();
 	}
 	
-	public synchronized void createSocket(String ip, Integer port) throws UnknownHostException, IOException {
+	public synchronized void createSocket(String ip, Integer port, String charset) throws
+			UnknownHostException, IllegalCharsetNameException, UnsupportedCharsetException,
+			IOException {
 		IPAndPort ipAndPort = new IPAndPort(ip, port);
-		SocketThread socketThread = new SocketThread(ip, port);
-		socketThread.start();
-		socketMap.put(ipAndPort, socketThread);
+		SocketWrapper socketWrapper = new SocketWrapper(ip, port, charset);
+		socketMap.put(ipAndPort, socketWrapper);
 	}
 	
-	public synchronized void sendByteArray(String ip, Integer port, byte[] data) throws IllegalArgumentException, IOException {
+	public synchronized void sendData(String ip, Integer port, String data)
+			throws UnsupportedEncodingException, IOException,
+			IllegalArgumentException {
 		IPAndPort ipAndPort = new IPAndPort(ip, port);
-		SocketThread socketThread = socketMap.get(ipAndPort);
+		SocketWrapper socketWrapper = socketMap.get(ipAndPort);
 		
-		if (socketThread != null && socketThread.isAlive()) {
-			socketThread.sendByteArray(data);
-		} else if (socketThread == null) {
-			throw new IllegalArgumentException("there is no open socket to this ip and port");
+		if (socketWrapper != null) {
+			socketWrapper.send(data);
 		} else {
-			throw new IOException("Connection to this ip and port is already closed: " + ipAndPort);
+			throw new IllegalArgumentException("There is no open socket to this ip and port: " + ipAndPort);
 		}
 	}
 	
-	public synchronized void flushSocket(String ip, Integer port) throws IllegalArgumentException, IOException {
+	public synchronized void flushSocket(String ip, Integer port)
+			throws IOException, IllegalArgumentException {
 		IPAndPort ipAndPort = new IPAndPort(ip, port);
-		SocketThread socketThread = socketMap.get(ipAndPort);
+		SocketWrapper socketWrapper = socketMap.get(ipAndPort);
 		
-		if (socketThread != null && socketThread.isAlive()) {
-			socketThread.flush();
-		} else if (socketThread == null) {
-			throw new IllegalArgumentException("there is no open socket to this ip and port");
+		if (socketWrapper != null) {
+			socketWrapper.flush();
 		} else {
-			throw new IOException("Connection to this ip and port is already closed: " + ipAndPort);
+			throw new IllegalArgumentException("There is no open socket to this ip and port: " + ipAndPort);
 		}
 	}
 	
-	public synchronized void closeSocket(String ip, Integer port) throws IllegalArgumentException, IOException {
+	public synchronized String readData(String ip, Integer port)
+			throws UnsupportedEncodingException, IOException,
+			IllegalArgumentException {
 		IPAndPort ipAndPort = new IPAndPort(ip, port);
-		SocketThread socketThread = socketMap.get(ipAndPort);
+		SocketWrapper socketWrapper = socketMap.get(ipAndPort);
 		
-		if (socketThread != null && socketThread.isAlive()) {
-			socketThread.close();
+		if (socketWrapper != null) {
+			return socketWrapper.read();
+		} else {
+			throw new IllegalArgumentException("There is no open socket to this ip and port: " + ipAndPort);
+		}
+	}
+	
+	public synchronized void closeSocket(String ip, Integer port)
+			throws IOException, IllegalArgumentException {
+		IPAndPort ipAndPort = new IPAndPort(ip, port);
+		SocketWrapper socketWrapper = socketMap.get(ipAndPort);
+		
+		if (socketWrapper != null) {
+			socketWrapper.close();
 			socketMap.remove(ipAndPort);
-		} else if (socketThread == null) {
-			throw new IllegalArgumentException("there is no open socket to this ip and port");
 		} else {
-			throw new IOException("Connection to this ip and port is already closed: " + ipAndPort);
+			throw new IllegalArgumentException("There is no open socket to this ip and port: " + ipAndPort);
 		}
 	}
 

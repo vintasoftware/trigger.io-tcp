@@ -6,6 +6,8 @@ import io.trigger.forge.android.core.ForgeTask;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.UnknownHostException;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
 
 import com.google.gson.JsonObject;
 
@@ -26,15 +28,20 @@ public class API {
 	
 	public static void createSocket(final ForgeTask task,
 			@ForgeParam("ip") final String ip,
-			@ForgeParam("port") final int port) {
+			@ForgeParam("port") final int port,
+			@ForgeParam("charset") final String charset) {
 		task.performAsync(new Runnable() {
 			@Override
 			public void run() {
 				try {
-					facade.createSocket(ip, port);
+					facade.createSocket(ip, port, charset);
 					task.success();
 				} catch (UnknownHostException e) {
-					task.error(jsonException("an unknown ip/host was entered", e.getMessage(), "BAD_INPUT", "BAD_IP"));
+					task.error(jsonException("An unknown ip/host was entered", e.getMessage(), "BAD_INPUT", "BAD_IP"));
+				} catch (IllegalCharsetNameException e) {
+					task.error(jsonException("An illegal charset name was entered", e.getMessage(), "BAD_INPUT", "BAD_CHARSET"));
+				} catch (UnsupportedCharsetException e) {
+					task.error(jsonException("An unsupported charset name was entered", e.getMessage(), "BAD_INPUT", "BAD_CHARSET"));
 				} catch (IOException e) {
 					task.error(jsonException("IO error while connecting", e.getMessage(), "UNEXPECTED_FAILURE", "IO_ERROR"));
 				}
@@ -45,17 +52,15 @@ public class API {
 	public static void sendData(final ForgeTask task,
 			@ForgeParam("ip") final String ip,
 			@ForgeParam("port") final int port,
-			@ForgeParam("data") final String data,
-			@ForgeParam("charset") final String charset) {
+			@ForgeParam("data") final String data) {
 		task.performAsync(new Runnable() {
 			@Override
 			public void run() {
 				try { 
-					byte[] dataByteArray = data.getBytes(charset);
-					facade.sendByteArray(ip, port, dataByteArray);
+					facade.sendData(ip, port, data);
 					task.success();
 				} catch (UnsupportedEncodingException e) {
-					task.error(jsonException(e.getMessage(), e.getMessage(), "BAD_INPUT", "BAD_CHARSET"));
+					task.error(jsonException("An unsupported encoding for this socket charset", e.getMessage(), "BAD_INPUT", "BAD_CHARSET"));
 				} catch (IllegalArgumentException e) {
 					task.error(jsonException(e.getMessage(), e.getMessage(), "BAD_INPUT", "BAD_IP"));
 				} catch (IOException e) {
@@ -79,6 +84,26 @@ public class API {
 				} catch (IOException e) {
 					task.error(jsonException("IO error while sending data", e.getMessage(), "UNEXPECTED_FAILURE", "IO_ERROR"));
 				}
+			}
+		});
+	}
+	
+	public static void readData(final ForgeTask task,
+			@ForgeParam("ip") final String ip,
+			@ForgeParam("port") final int port) {
+		task.performAsync(new Runnable() {
+			@Override
+			public void run() {
+				try { 
+					String data = facade.readData(ip, port);
+					task.success(data);
+				} catch (UnsupportedEncodingException e) {
+					task.error(jsonException("An unsupported encoding for this socket charset", e.getMessage(), "BAD_INPUT", "BAD_CHARSET"));
+				} catch (IllegalArgumentException e) {
+					task.error(jsonException(e.getMessage(), e.getMessage(), "BAD_INPUT", "BAD_IP"));
+				} catch (IOException e) {
+					task.error(jsonException("IO error while sending data", e.getMessage(), "UNEXPECTED_FAILURE", "IO_ERROR"));
+				} 
 			}
 		});
 	}
