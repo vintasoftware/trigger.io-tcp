@@ -7,7 +7,12 @@ asyncTest("Send alice.txt and check echo", 1, function() {
     var echoedData = [];
     var echoedDataTotal = 0;
 
-    var socket = new forge.tcp.Socket('10.0.2.2', 9100);
+    var socket = new forge.tcp.Socket('10.0.2.2', 9100, {
+      onError: function (error) {
+        ok(false, "unexpected error: " + JSON.stringify(error));
+        start();
+      }
+    });
     socket.connect();
     socket.send(base64String);
     socket.flush();

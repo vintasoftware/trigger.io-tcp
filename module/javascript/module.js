@@ -114,11 +114,19 @@ forge.tcp = (function () {
     this.pipeline = new Pipeline();
     
     var onConnect = config.onConnect || noop;
-    var onError = config.onError || noop;
     var onClose = config.onClose || noop;
     this.onConnect = convertToContinuation(this, onConnect);
-    this.onError = convertToContinuation(this, onError);
     this.onClose = convertToContinuation(this, onClose);
+
+    this.customOnError = config.onError || noop;
+  };
+
+  Socket.prototype.onError = function (error) {
+    this.customOnError(error);
+  };
+
+  Socket.prototype.getOnErrorFn = function () {
+    return this.onError.bind(this);
   };
 
   Socket.prototype.connectNow = function (success, error) {
@@ -126,7 +134,7 @@ forge.tcp = (function () {
   };
 
   Socket.prototype.connectFn = function (callback) {
-    var error = this.onError;
+    var error = this.getOnErrorFn();
 
     this.connectNow(callback, error);
   };
@@ -142,7 +150,7 @@ forge.tcp = (function () {
   };
 
   Socket.prototype.makeSenderFn = function (data) {
-    var error = this.onError;
+    var error = this.getOnErrorFn();
     
     return function (callback) {
       this.sendNow(data, callback, error);
@@ -182,7 +190,7 @@ forge.tcp = (function () {
   };
 
   Socket.prototype.flushFn = function (callback) {
-    var error = this.onError;
+    var error = this.getOnErrorFn();
     
     this.flushNow(callback, error);
   };
@@ -201,7 +209,7 @@ forge.tcp = (function () {
   };
 
   Socket.prototype.readFn = function (callback) {
-    var error = this.onError;
+    var error = this.getOnErrorFn();
     
     this.readNow(callback, error);
   };
@@ -218,7 +226,7 @@ forge.tcp = (function () {
   };
 
   Socket.prototype.closeFn = function (callback) {
-    var error = this.onError;
+    var error = this.getOnErrorFn();
 
     this.closeNow(callback, error);
   };
