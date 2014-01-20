@@ -1,6 +1,7 @@
 package io.trigger.forge.android.modules.tcp;
 
 public class IPAndPort {
+	
 	private String ip;
 	private Integer port;
 	

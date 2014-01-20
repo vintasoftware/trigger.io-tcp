@@ -102,7 +102,9 @@ public class API {
 				} catch (IllegalArgumentException e) {
 					task.error(jsonException(e.getMessage(), e.getMessage(), "BAD_INPUT", "BAD_IP"));
 				} catch (IOException e) {
-					task.error(jsonException("IO error while sending data", e.getMessage(), "UNEXPECTED_FAILURE", "IO_ERROR"));
+					task.error(jsonException("IO error while reading data", e.getMessage(), "UNEXPECTED_FAILURE", "IO_ERROR"));
+				} catch (InterruptedException e) {
+					task.error(jsonException("Interrupted thread while reading data", e.getMessage(), "UNEXPECTED_FAILURE", "THREAD_ERROR"));
 				} 
 			}
 		});
