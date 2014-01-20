@@ -232,5 +232,9 @@ forge.tcp = (function () {
 
   exports.Socket = Socket;
 
+  exports.base64 = function (file, success, error) {
+    forge.internal.call("tcp.base64", file, success, error);
+  };
+
   return exports;
 }());

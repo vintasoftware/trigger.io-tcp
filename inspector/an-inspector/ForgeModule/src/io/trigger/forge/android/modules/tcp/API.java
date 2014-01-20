@@ -1,5 +1,7 @@
 package io.trigger.forge.android.modules.tcp;
 
+import io.trigger.forge.android.core.ForgeApp;
+import io.trigger.forge.android.core.ForgeFile;
 import io.trigger.forge.android.core.ForgeParam;
 import io.trigger.forge.android.core.ForgeTask;
 
@@ -9,11 +11,32 @@ import java.net.UnknownHostException;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
 
+import android.annotation.SuppressLint;
+import android.util.Base64;
+
 import com.google.gson.JsonObject;
 
 public class API {
 	
 	private static SocketFacade facade = SocketFacade.getInstance();
+	
+	// for using in tests
+	@SuppressLint("NewApi")
+	public static void base64(final ForgeTask task) {
+		if (!task.params.has("uri") || task.params.get("uri").isJsonNull()) {
+			task.error("Invalid parameters sent to forge.file.base64", "BAD_INPUT", null);
+			return;
+		}
+		task.performAsync(new Runnable() {
+			public void run() {
+				try {
+					task.success(Base64.encodeToString(new ForgeFile(ForgeApp.getActivity(), task.params).data(), Base64.NO_WRAP));
+				} catch (Exception e) {
+					task.error("Error reading file", "UNEXPECTED_FAILURE", null);
+				}
+			}
+		});
+	}
 	
 	private static JsonObject jsonException(String message, String originalMessage, String type, String subtype) {
 		// see error callback standards: https://trigger.io/docs/current/getting_started/api.html

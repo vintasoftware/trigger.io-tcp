@@ -1,13 +1,38 @@
 module("tcp");
 
-// In this test we call the example showAlert API method with an empty string
-// In the example API method an empty string will immediately call the error callback
-asyncTest("Attempt to show an alert with no text", 1, function() {
-	forge.tcp.showAlert("", function () {
-		ok(false, "Expected failure, got success");
-		start();
-	}, function () {
-		ok(true, "Expected failure");
-		start();
-	});
+asyncTest("Send alice.txt and check echo", 1, function() {
+  var file = forge.inspector.getFixture("tcp", "alice.txt");
+
+  forge.tcp.base64(file, function (base64String) {
+    var echoedData = [];
+    var echoedDataTotal = 0;
+
+    var socket = new forge.tcp.Socket('10.0.2.2', 9100);
+    socket.connect();
+    socket.send(base64String);
+    socket.flush();
+
+    var processData = function (data) {
+      echoedData.push(data);
+      echoedDataTotal += data.length;
+      
+      if (echoedDataTotal < base64String.length) {
+        socket.read(processData);
+      } else if (echoedDataTotal > base64String.length) {
+        socket.close();
+        ok(false, "received more data than was sent");
+        start();
+      } else {
+        socket.close();
+        var echo = echoedData.join('');
+        strictEqual(echo, base64String, "received string was equal to sent string");
+        start();
+      }
+    };
+
+    socket.read(processData);
+  }, function base64Error() {
+    ok(false, "failed to convert file to base64 string");
+    start();
+  });
 });
