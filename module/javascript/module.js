@@ -54,6 +54,11 @@ forge.tcp = (function () {
     this.running = false;
   };
 
+  Pipeline.prototype.interrupt = function () {
+    this.fnList = [];
+    this.running = false;
+  };
+
   Pipeline.prototype.hasNext = function () {
     return this.fnList.length !== 0;
   };
@@ -122,6 +127,7 @@ forge.tcp = (function () {
   };
 
   Socket.prototype.onError = function (error) {
+    this.pipeline.interrupt();
     this.customOnError(error);
   };
 
