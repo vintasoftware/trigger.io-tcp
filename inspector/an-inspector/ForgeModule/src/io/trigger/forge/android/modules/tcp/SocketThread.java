@@ -1,5 +1,7 @@
 package io.trigger.forge.android.modules.tcp;
 
+import io.trigger.forge.android.core.ForgeApp;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -10,6 +12,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import com.google.gson.JsonObject;
 
 public class SocketThread extends Thread {
 
@@ -103,6 +107,19 @@ public class SocketThread extends Thread {
 					String data = byteArrayToString(received, receivedCount);
 					this.dataQueue.add(new DataMessage(data));
 				} else {
+					JsonObject dataJson = new JsonObject();
+					dataJson.addProperty("ip", ip);
+					dataJson.addProperty("port", port);
+					ForgeApp.event("tcp.onReadError", dataJson);
+					
+					try {
+						// must close the socket to cancel pending sends
+						this.close();
+					} catch (Exception e) {
+						e.printStackTrace();
+						throw e;
+					}
+					
 					throw new ClosedSocketException();
 				}
 			}
