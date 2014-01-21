@@ -9,7 +9,12 @@ asyncTest("Send alice.txt and check echo", 1, function() {
 
     var socket = new forge.tcp.Socket('10.0.2.2', 9100, {
       onError: function (error) {
-        ok(false, "unexpected error: " + JSON.stringify(error));
+        if (error.subtype === 'CONNECTION_ERROR') {
+          ok(false, "connection error, please start the echo server before running this test");
+        } else {
+          ok(false, "unexpected error: " + JSON.stringify(error));
+        }
+        
         start();
       }
     });

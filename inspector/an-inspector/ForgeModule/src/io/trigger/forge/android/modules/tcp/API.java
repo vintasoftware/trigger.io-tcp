@@ -66,7 +66,7 @@ public class API {
 				} catch (UnsupportedCharsetException e) {
 					task.error(jsonException("An unsupported charset name was entered", e.getMessage(), "BAD_INPUT", "BAD_CHARSET"));
 				} catch (IOException e) {
-					task.error(jsonException("IO error while connecting", e.getMessage(), "UNEXPECTED_FAILURE", "IO_ERROR"));
+					task.error(jsonException("IO error while connecting", e.getMessage(), "UNEXPECTED_FAILURE", "CONNECTION_ERROR"));
 				}
 			}
 		});
@@ -87,7 +87,7 @@ public class API {
 				} catch (IllegalArgumentException e) {
 					task.error(jsonException(e.getMessage(), e.getMessage(), "BAD_INPUT", "BAD_IP"));
 				} catch (IOException e) {
-					task.error(jsonException("IO error while sending data", e.getMessage(), "UNEXPECTED_FAILURE", "IO_ERROR"));
+					task.error(jsonException("IO error while sending data", e.getMessage(), "UNEXPECTED_FAILURE", "SEND_ERROR"));
 				} 
 			}
 		});
@@ -105,7 +105,7 @@ public class API {
 				} catch (IllegalArgumentException e) {
 					task.error(jsonException(e.getMessage(), e.getMessage(), "BAD_INPUT", "BAD_IP"));
 				} catch (IOException e) {
-					task.error(jsonException("IO error while sending data", e.getMessage(), "UNEXPECTED_FAILURE", "IO_ERROR"));
+					task.error(jsonException("IO error while sending data", e.getMessage(), "UNEXPECTED_FAILURE", "FLUSH_ERROR"));
 				}
 			}
 		});
@@ -127,9 +127,9 @@ public class API {
 				} catch (UnsupportedEncodingException e) {
 					task.error(jsonException("An unsupported encoding for this socket charset", e.getMessage(), "BAD_INPUT", "BAD_CHARSET"));
 				} catch (IOException e) {
-					task.error(jsonException("IO error while reading data", e.getMessage(), "UNEXPECTED_FAILURE", "IO_ERROR"));
+					task.error(jsonException("IO error while reading data", e.getMessage(), "UNEXPECTED_FAILURE", "READ_ERROR"));
 				} catch (ClosedSocketException e) {
-					task.error(jsonException("This socket is closed and has no data to be read", e.getMessage(), "UNEXPECTED_FAILURE", "IO_ERROR"));
+					task.error(jsonException("This socket is closed and has no data to be read", e.getMessage(), "UNEXPECTED_FAILURE", "READ_ERROR"));
 				} catch (Exception e) {
 					task.error(jsonException("Unknown exception while reading data", e.getMessage(), "UNEXPECTED_FAILURE", "UNKNOWN_EXCEPTION"));
 				} 
@@ -149,7 +149,7 @@ public class API {
 				} catch (IllegalArgumentException e) {
 					task.error(jsonException(e.getMessage(), e.getMessage(), "BAD_INPUT", "BAD_IP"));
 				} catch (IOException e) {
-					task.error(jsonException("IO error while sending data", e.getMessage(), "UNEXPECTED_FAILURE", "IO_ERROR"));
+					task.error(jsonException("IO error while sending data", e.getMessage(), "UNEXPECTED_FAILURE", "CLOSE_ERROR"));
 				}
 			}
 		});
