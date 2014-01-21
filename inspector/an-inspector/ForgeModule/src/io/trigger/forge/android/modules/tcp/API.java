@@ -120,14 +120,18 @@ public class API {
 				try { 
 					String data = facade.readData(ip, port);
 					task.success(data);
-				} catch (UnsupportedEncodingException e) {
-					task.error(jsonException("An unsupported encoding for this socket charset", e.getMessage(), "BAD_INPUT", "BAD_CHARSET"));
 				} catch (IllegalArgumentException e) {
 					task.error(jsonException(e.getMessage(), e.getMessage(), "BAD_INPUT", "BAD_IP"));
-				} catch (IOException e) {
-					task.error(jsonException("IO error while reading data", e.getMessage(), "UNEXPECTED_FAILURE", "IO_ERROR"));
 				} catch (InterruptedException e) {
 					task.error(jsonException("Interrupted thread while reading data", e.getMessage(), "UNEXPECTED_FAILURE", "THREAD_ERROR"));
+				} catch (UnsupportedEncodingException e) {
+					task.error(jsonException("An unsupported encoding for this socket charset", e.getMessage(), "BAD_INPUT", "BAD_CHARSET"));
+				} catch (IOException e) {
+					task.error(jsonException("IO error while reading data", e.getMessage(), "UNEXPECTED_FAILURE", "IO_ERROR"));
+				} catch (ClosedSocketException e) {
+					task.error(jsonException("This socket is closed and has no data to be read", e.getMessage(), "UNEXPECTED_FAILURE", "IO_ERROR"));
+				} catch (Exception e) {
+					task.error(jsonException("Unknown exception while reading data", e.getMessage(), "UNEXPECTED_FAILURE", "UNKNOWN_EXCEPTION"));
 				} 
 			}
 		});

@@ -6,13 +6,12 @@ import java.net.UnknownHostException;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.HashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class SocketFacade {
 
 	public static SocketFacade instance;
 	
-	public synchronized static SocketFacade getInstance() {
+	public static SocketFacade getInstance() {
 		if (instance == null) {
 			instance = new SocketFacade();
 		}
@@ -20,14 +19,12 @@ public class SocketFacade {
 	}
 	
 	private HashMap<IPAndPort, SocketThread> socketMap;
-	private LinkedBlockingQueue<String> dataQueue;
 	
 	public SocketFacade() {
 		socketMap = new HashMap<IPAndPort, SocketThread>();
-		dataQueue = new LinkedBlockingQueue<String>();
 	}
 	
-	public synchronized void createSocket(String ip, Integer port, String charset) throws
+	public void createSocket(String ip, Integer port, String charset) throws
 			UnknownHostException, IllegalCharsetNameException, UnsupportedCharsetException,
 			IOException {
 		IPAndPort ipAndPort = new IPAndPort(ip, port);
@@ -62,23 +59,20 @@ public class SocketFacade {
 	}
 	
 	public String readData(String ip, Integer port)
-			throws UnsupportedEncodingException, IOException,
-			IllegalArgumentException, InterruptedException {
+			throws IllegalArgumentException, InterruptedException,
+			UnsupportedEncodingException, IOException,
+			ClosedSocketException, Exception {
 		IPAndPort ipAndPort = new IPAndPort(ip, port);
+		SocketThread socketThread = socketMap.get(ipAndPort);
 		
-		if (socketMap.containsKey(ipAndPort)) {
-			String took = dataQueue.take();
-			return took;
+		if (socketThread != null) {
+			return socketThread.read();
 		} else {
 			throw new IllegalArgumentException("There is no open socket to this ip and port: " + ipAndPort);
 		}
 	}
 	
-	public void addDataToBeRead(String data) {
-		dataQueue.add(data);
-	}
-	
-	public synchronized void closeSocket(String ip, Integer port)
+	public void closeSocket(String ip, Integer port)
 			throws IOException, IllegalArgumentException {
 		IPAndPort ipAndPort = new IPAndPort(ip, port);
 		SocketThread socketThread = socketMap.get(ipAndPort);

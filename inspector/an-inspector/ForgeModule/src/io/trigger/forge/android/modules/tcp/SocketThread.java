@@ -1,7 +1,5 @@
 package io.trigger.forge.android.modules.tcp;
 
-import io.trigger.forge.android.core.ForgeApp;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -11,8 +9,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
-
-import com.google.gson.JsonObject;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class SocketThread extends Thread {
 
@@ -24,6 +21,7 @@ public class SocketThread extends Thread {
 	private InputStream in;
 	private OutputStream out;
 	private volatile boolean isOpen;
+	private LinkedBlockingQueue<DataMessage> dataQueue;
 
 	public SocketThread(String ip, Integer port, String charset) throws
 			UnknownHostException, IllegalCharsetNameException, UnsupportedCharsetException,
@@ -36,6 +34,7 @@ public class SocketThread extends Thread {
 		this.in = this.socket.getInputStream();
 		this.out = this.socket.getOutputStream();
 		this.isOpen = true;
+		this.dataQueue = new LinkedBlockingQueue<DataMessage>();
 	}
 
 	public String getIP() {
@@ -46,21 +45,39 @@ public class SocketThread extends Thread {
 		return port;
 	}
 
-	public synchronized void send(String data)
+	public void send(String data)
 			throws UnsupportedEncodingException, IOException {
 		byte[] dataByteArray = data.getBytes(charset.name());
 		out.write(dataByteArray);
 	}
 
-	public synchronized void flush() throws IOException {
+	public void flush() throws IOException {
 		out.flush();
 	}
 
-	public synchronized void close() throws IOException {
+	public void close() throws IOException {
 		isOpen = false;
 		in.close();
 		out.close();
 		socket.close();
+	}
+	
+	public String read()
+			throws InterruptedException, UnsupportedEncodingException, IOException,
+			ClosedSocketException, Exception {
+		if (this.isAlive() || !dataQueue.isEmpty()) {
+			DataMessage message = dataQueue.take();
+			
+			if (message.isData()) {
+				return message.getData();
+			} else {
+				// may be: UnsupportedEncodingException, IOException
+				//         ClosedSocketException or Exception
+				throw message.getException();
+			}
+		} else {
+			throw new ClosedSocketException();
+		}
 	}
 
 	private String byteArrayToString(byte[] byteArray, int length)
@@ -76,8 +93,6 @@ public class SocketThread extends Thread {
 
 	@Override
 	public void run() {
-		SocketFacade facade = SocketFacade.getInstance();
-		
 		try {
 			while (this.isOpen) {
 				byte[] received = new byte[this.readBufferSize];
@@ -86,18 +101,13 @@ public class SocketThread extends Thread {
 	
 				if (receivedCount != -1) {
 					String data = byteArrayToString(received, receivedCount);
-					facade.addDataToBeRead(data);
+					this.dataQueue.add(new DataMessage(data));
 				} else {
-					break;
+					throw new ClosedSocketException();
 				}
 			}
-		} catch (IOException e) {
-			if (this.isOpen) {
-				JsonObject dataJson = new JsonObject();
-				dataJson.addProperty("ip", this.ip);
-				dataJson.addProperty("port", this.port);
-				ForgeApp.event("tcp.onReadError", dataJson);
-			}
+		} catch (Exception e) {
+			this.dataQueue.add(new DataMessage(e));
 		}
 	}
 }
