@@ -15,7 +15,7 @@ public class SocketFacade {
 
 	public static SocketFacade instance;
 	
-	public static SocketFacade getInstance() {
+	public synchronized static SocketFacade getInstance() {
 		if (instance == null) {
 			instance = new SocketFacade();
 		}
@@ -28,16 +28,21 @@ public class SocketFacade {
 		socketMap = new HashMap<IPAndPort, SocketThread>();
 	}
 	
-	public void createSocket(String ip, Integer port, String charset) throws
-			UnknownHostException, IllegalCharsetNameException, UnsupportedCharsetException,
-			IOException {
+	public synchronized void createSocket(String ip, int port, String charset) throws
+			UnknownHostException, IllegalCharsetNameException,
+			UnsupportedCharsetException, IOException, IllegalArgumentException {
 		IPAndPort ipAndPort = new IPAndPort(ip, port);
-		SocketThread socketThread = new SocketThread(ip, port, charset);
-		socketMap.put(ipAndPort, socketThread);
-		socketThread.start();
+		
+		if (!socketMap.containsKey(ipAndPort)) {
+			SocketThread socketThread = new SocketThread(ip, port, charset);
+			socketMap.put(ipAndPort, socketThread);
+			socketThread.start();
+		} else {
+			throw new IllegalArgumentException("There is no open socket to this ip and port: " + ipAndPort);
+		}
 	}
 	
-	public void sendData(String ip, Integer port, String data)
+	public void sendData(String ip, int port, String data)
 			throws UnsupportedEncodingException, IOException,
 			IllegalArgumentException {
 		IPAndPort ipAndPort = new IPAndPort(ip, port);
@@ -50,7 +55,7 @@ public class SocketFacade {
 		}
 	}
 	
-	public void flushSocket(String ip, Integer port)
+	public void flushSocket(String ip, int port)
 			throws IOException, IllegalArgumentException {
 		IPAndPort ipAndPort = new IPAndPort(ip, port);
 		SocketThread socketThread = socketMap.get(ipAndPort);
@@ -62,10 +67,10 @@ public class SocketFacade {
 		}
 	}
 	
-	public String readData(String ip, Integer port)
-			throws IllegalArgumentException, InterruptedException,
-			UnsupportedEncodingException, IOException,
-			ClosedSocketException, Exception {
+	public String readData(String ip, int port)
+			throws InterruptedException, UnsupportedEncodingException,
+			IOException, ClosedSocketException,
+			IllegalArgumentException, Exception {
 		IPAndPort ipAndPort = new IPAndPort(ip, port);
 		SocketThread socketThread = socketMap.get(ipAndPort);
 		
@@ -76,7 +81,7 @@ public class SocketFacade {
 		}
 	}
 	
-	public void closeSocket(String ip, Integer port)
+	public synchronized void closeSocket(String ip, int port)
 			throws IOException, IllegalArgumentException {
 		IPAndPort ipAndPort = new IPAndPort(ip, port);
 		SocketThread socketThread = socketMap.get(ipAndPort);

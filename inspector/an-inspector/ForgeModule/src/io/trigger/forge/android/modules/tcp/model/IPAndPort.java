@@ -3,9 +3,13 @@ package io.trigger.forge.android.modules.tcp.model;
 public class IPAndPort {
 	
 	private String ip;
-	private Integer port;
+	private int port;
 	
-	public IPAndPort(String ip, Integer port) {
+	public IPAndPort(String ip, int port) {
+		if (ip == null) {
+			throw new IllegalArgumentException("Cannot create IPAndPort with null IP");
+		}
+		
 		this.ip = ip;
 		this.port = port;
 	}
@@ -14,7 +18,7 @@ public class IPAndPort {
 		return ip;
 	}
 	
-	public Integer getPort() {
+	public int getPort() {
 		return port;
 	}
 
@@ -23,7 +27,7 @@ public class IPAndPort {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((ip == null) ? 0 : ip.hashCode());
-		result = prime * result + ((port == null) ? 0 : port.hashCode());
+		result = prime * result + port;
 		return result;
 	}
 
@@ -38,9 +42,18 @@ public class IPAndPort {
 		if (!(obj instanceof IPAndPort)) {
 			return false;
 		}
-		
 		IPAndPort other = (IPAndPort) obj;
-		return ip.equals(other.ip) && port.equals(other.port);
+		if (ip == null) {
+			if (other.ip != null) {
+				return false;
+			}
+		} else if (!ip.equals(other.ip)) {
+			return false;
+		}
+		if (port != other.port) {
+			return false;
+		}
+		return true;
 	}
 
 	@Override

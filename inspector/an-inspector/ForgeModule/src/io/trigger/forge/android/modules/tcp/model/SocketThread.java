@@ -20,7 +20,7 @@ import com.google.gson.JsonObject;
 public class SocketThread extends Thread {
 
 	private String ip;
-	private Integer port;
+	private int port;
 	private String charset;
 	private int readBufferSize;
 	private Socket socket;
@@ -28,7 +28,7 @@ public class SocketThread extends Thread {
 	private OutputStream out;
 	private LinkedBlockingQueue<DataMessage> dataQueue;
 
-	public SocketThread(String ip, Integer port, String charset) throws
+	public SocketThread(String ip, int port, String charset) throws
 			UnknownHostException, IllegalCharsetNameException, UnsupportedCharsetException,
 			IOException {
 		this.ip = ip;
@@ -45,21 +45,21 @@ public class SocketThread extends Thread {
 		return ip;
 	}
 
-	public Integer getPort() {
+	public int getPort() {
 		return port;
 	}
 
-	public void send(String data)
+	public synchronized void send(String data)
 			throws UnsupportedEncodingException, IOException {
 		byte[] dataByteArray = data.getBytes(charset);
 		out.write(dataByteArray);
 	}
 
-	public void flush() throws IOException {
+	public synchronized void flush() throws IOException {
 		out.flush();
 	}
 
-	public void close() throws IOException {
+	public synchronized void close() throws IOException {
 		in.close();
 		out.close();
 		socket.close();
