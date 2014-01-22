@@ -1,4 +1,8 @@
-package io.trigger.forge.android.modules.tcp;
+package io.trigger.forge.android.modules.tcp.facade;
+
+import io.trigger.forge.android.modules.tcp.exception.ClosedSocketException;
+import io.trigger.forge.android.modules.tcp.model.IPAndPort;
+import io.trigger.forge.android.modules.tcp.model.SocketThread;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;

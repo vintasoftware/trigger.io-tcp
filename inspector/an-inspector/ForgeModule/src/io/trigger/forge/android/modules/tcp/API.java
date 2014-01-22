@@ -4,6 +4,9 @@ import io.trigger.forge.android.core.ForgeApp;
 import io.trigger.forge.android.core.ForgeFile;
 import io.trigger.forge.android.core.ForgeParam;
 import io.trigger.forge.android.core.ForgeTask;
+import io.trigger.forge.android.modules.tcp.exception.ClosedSocketException;
+import io.trigger.forge.android.modules.tcp.facade.SocketFacade;
+import io.trigger.forge.android.modules.tcp.test.EchoServer;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -19,24 +22,6 @@ import com.google.gson.JsonObject;
 public class API {
 	
 	private static SocketFacade facade = SocketFacade.getInstance();
-	
-	// for using in tests
-	@SuppressLint("NewApi")
-	public static void base64(final ForgeTask task) {
-		if (!task.params.has("uri") || task.params.get("uri").isJsonNull()) {
-			task.error("Invalid parameters sent to forge.file.base64", "BAD_INPUT", null);
-			return;
-		}
-		task.performAsync(new Runnable() {
-			public void run() {
-				try {
-					task.success(Base64.encodeToString(new ForgeFile(ForgeApp.getActivity(), task.params).data(), Base64.NO_WRAP));
-				} catch (Exception e) {
-					task.error("Error reading file", "UNEXPECTED_FAILURE", null);
-				}
-			}
-		});
-	}
 	
 	private static JsonObject jsonException(String message, String originalMessage, String type, String subtype) {
 		// see error callback standards: https://trigger.io/docs/current/getting_started/api.html
@@ -154,4 +139,58 @@ public class API {
 			}
 		});
 	}
+	
+	// Start of methods used for tests
+	@SuppressLint("NewApi")
+	public static void base64(final ForgeTask task) {
+		if (!task.params.has("uri") || task.params.get("uri").isJsonNull()) {
+			task.error("Invalid parameters sent to forge.file.base64", "BAD_INPUT", null);
+			return;
+		}
+		task.performAsync(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					task.success(Base64.encodeToString(new ForgeFile(ForgeApp.getActivity(), task.params).data(), Base64.NO_WRAP));
+				} catch (Exception e) {
+					task.error("Error reading file", "UNEXPECTED_FAILURE", null);
+				}
+			}
+		});
+	}
+	
+	public static void startEchoServer(final ForgeTask task,
+			@ForgeParam("port") final int port) {
+		task.performAsync(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					EchoServer.startThread(port);
+					task.success();
+				} catch (IllegalArgumentException e) {
+					task.error(jsonException(e.getMessage(), e.getMessage(), "BAD_INPUT", "BAD_ECHO_SERVER_STATUS"));
+				} catch (Exception e) {
+					task.error(jsonException(e.getMessage(), e.getMessage(), "UNEXPECTED_FAILURE", null));
+				}
+			}
+		});
+	}
+	
+	public static void stopEchoServer(final ForgeTask task) {
+		task.performAsync(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					boolean status = EchoServer.checkAndStopThread();
+					task.success(status);
+				} catch (IllegalArgumentException e) {
+					task.error(jsonException(e.getMessage(), e.getMessage(), "BAD_INPUT", "BAD_ECHO_SERVER_STATUS"));
+				} catch (Exception e) {
+					task.error(jsonException(e.getMessage(), e.getMessage(), "UNEXPECTED_FAILURE", null));
+				}
+			}
+		});
+	}
+	// End of methods used for tests
+	
 }

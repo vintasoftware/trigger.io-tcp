@@ -1,4 +1,4 @@
-package io.trigger.forge.android.modules.tcp;
+package io.trigger.forge.android.modules.tcp.model;
 
 public class IPAndPort {
 	

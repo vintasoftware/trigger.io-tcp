@@ -246,8 +246,19 @@ forge.tcp = (function () {
 
   exports.Socket = Socket;
 
-  exports.base64 = function (file, success, error) {
+  // below are functions used for testing purposes
+  exports.test = {};
+
+  exports.test.base64 = function (file, success, error) {
     forge.internal.call("tcp.base64", file, success, error);
+  };
+
+  exports.test.startEchoServer = function (port, success, error) {
+    forge.internal.call("tcp.startEchoServer", {port: port}, success, error);
+  };
+
+  exports.test.stopEchoServer = function (success, error) {
+    forge.internal.call("tcp.stopEchoServer", {}, success, error);
   };
 
   return exports;

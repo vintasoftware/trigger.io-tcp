@@ -1,6 +1,8 @@
-package io.trigger.forge.android.modules.tcp;
+package io.trigger.forge.android.modules.tcp.model;
 
 import io.trigger.forge.android.core.ForgeApp;
+import io.trigger.forge.android.modules.tcp.exception.ClosedSocketException;
+import io.trigger.forge.android.modules.tcp.util.Util;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,12 +21,11 @@ public class SocketThread extends Thread {
 
 	private String ip;
 	private Integer port;
-	private Charset charset;
+	private String charset;
 	private int readBufferSize;
 	private Socket socket;
 	private InputStream in;
 	private OutputStream out;
-	private volatile boolean isOpen;
 	private LinkedBlockingQueue<DataMessage> dataQueue;
 
 	public SocketThread(String ip, Integer port, String charset) throws
@@ -33,11 +34,10 @@ public class SocketThread extends Thread {
 		this.ip = ip;
 		this.port = port;
 		this.readBufferSize = 8192;
-		this.charset = Charset.forName(charset);
+		this.charset = Charset.forName(charset).name();
 		this.socket = new Socket(ip, port);
 		this.in = this.socket.getInputStream();
 		this.out = this.socket.getOutputStream();
-		this.isOpen = true;
 		this.dataQueue = new LinkedBlockingQueue<DataMessage>();
 	}
 
@@ -51,7 +51,7 @@ public class SocketThread extends Thread {
 
 	public void send(String data)
 			throws UnsupportedEncodingException, IOException {
-		byte[] dataByteArray = data.getBytes(charset.name());
+		byte[] dataByteArray = data.getBytes(charset);
 		out.write(dataByteArray);
 	}
 
@@ -60,7 +60,6 @@ public class SocketThread extends Thread {
 	}
 
 	public void close() throws IOException {
-		isOpen = false;
 		in.close();
 		out.close();
 		socket.close();
@@ -84,27 +83,16 @@ public class SocketThread extends Thread {
 		}
 	}
 
-	private String byteArrayToString(byte[] byteArray, int length)
-			throws UnsupportedEncodingException {
-		byte[] receivedCorrect = new byte[length];
-
-		for (int i = 0; i < length; i++) {
-			receivedCorrect[i] = byteArray[i];
-		}
-
-		return new String(receivedCorrect, charset.name());
-	}
-
 	@Override
 	public void run() {
 		try {
-			while (this.isOpen) {
+			for (;;) {
 				byte[] received = new byte[this.readBufferSize];
 	
 				int receivedCount = this.in.read(received);
 	
 				if (receivedCount != -1) {
-					String data = byteArrayToString(received, receivedCount);
+					String data = Util.byteArrayToString(received, receivedCount, this.charset);
 					this.dataQueue.add(new DataMessage(data));
 				} else {
 					JsonObject dataJson = new JsonObject();

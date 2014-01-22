@@ -1,4 +1,4 @@
-package io.trigger.forge.android.modules.tcp;
+package io.trigger.forge.android.modules.tcp.exception;
 
 public class ClosedSocketException extends Exception {
 

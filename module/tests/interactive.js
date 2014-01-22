@@ -1,6 +1,5 @@
 module("tcp");
 
-// In this test we call the example showAlert API method with an example string
 asyncTest("Attempt to show an alert with no text", 1, function() {
 	forge.tcp.showAlert("Hello, testing world!", function () {
 		askQuestion("Did you see an alert with the message 'Hello, testing world!'?", {
