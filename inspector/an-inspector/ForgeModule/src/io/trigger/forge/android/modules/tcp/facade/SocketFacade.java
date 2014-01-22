@@ -28,13 +28,13 @@ public class SocketFacade {
 		socketMap = new HashMap<IPAndPort, SocketThread>();
 	}
 	
-	public synchronized void createSocket(String ip, int port, String charset) throws
+	public synchronized void createSocket(String ip, int port, String charset, int timeout) throws
 			UnknownHostException, IllegalCharsetNameException,
 			UnsupportedCharsetException, IOException, IllegalArgumentException {
 		IPAndPort ipAndPort = new IPAndPort(ip, port);
 		
 		if (!socketMap.containsKey(ipAndPort)) {
-			SocketThread socketThread = new SocketThread(ip, port, charset);
+			SocketThread socketThread = new SocketThread(ip, port, charset, timeout);
 			socketMap.put(ipAndPort, socketThread);
 			socketThread.start();
 		} else {

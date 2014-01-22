@@ -113,6 +113,7 @@ forge.tcp = (function () {
     this.ip = ip;
     this.port = port;
     this.charset = config.charset || 'UTF-8';
+    this.timeout = config.timeout || 30000;
     this.maxBufferLength = config.maxBufferLength || 65536;
     this.buffer = [];
     this.totalBufferLength = 0;
@@ -136,7 +137,7 @@ forge.tcp = (function () {
   };
 
   Socket.prototype.connectNow = function (success, error) {
-    forge.internal.call('tcp.createSocket', {ip: this.ip, port: this.port, charset: this.charset}, success, error);
+    forge.internal.call('tcp.createSocket', {ip: this.ip, port: this.port, charset: this.charset, timeout: this.timeout}, success, error);
   };
 
   Socket.prototype.connectFn = function (callback) {

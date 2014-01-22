@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
@@ -28,14 +29,15 @@ public class SocketThread extends Thread {
 	private OutputStream out;
 	private LinkedBlockingQueue<DataMessage> dataQueue;
 
-	public SocketThread(String ip, int port, String charset) throws
+	public SocketThread(String ip, int port, String charset, int timeout) throws
 			UnknownHostException, IllegalCharsetNameException, UnsupportedCharsetException,
 			IOException {
 		this.ip = ip;
 		this.port = port;
 		this.readBufferSize = 8192;
 		this.charset = Charset.forName(charset).name();
-		this.socket = new Socket(ip, port);
+		this.socket = new Socket();
+		this.socket.connect(new InetSocketAddress(ip, port), timeout);
 		this.in = this.socket.getInputStream();
 		this.out = this.socket.getOutputStream();
 		this.dataQueue = new LinkedBlockingQueue<DataMessage>();

@@ -37,12 +37,13 @@ public class API {
 	public static void createSocket(final ForgeTask task,
 			@ForgeParam("ip") final String ip,
 			@ForgeParam("port") final int port,
-			@ForgeParam("charset") final String charset) {
+			@ForgeParam("charset") final String charset,
+			@ForgeParam("timeout") final int timeout) {
 		task.performAsync(new Runnable() {
 			@Override
 			public void run() {
 				try {
-					facade.createSocket(ip, port, charset);
+					facade.createSocket(ip, port, charset, timeout);
 					task.success();
 				} catch (UnknownHostException e) {
 					task.error(jsonException("An unknown ip/host was entered", e.getMessage(), "BAD_INPUT", "BAD_IP"));
