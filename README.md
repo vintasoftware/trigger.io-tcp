@@ -4,7 +4,7 @@
 trigger.io module for TCP sockets (android-only for now)
 
 ## Usage
-**tcp** module supports an object-oriented interface for creating TCP Sockets. You can create a socket with `var socket = new forge.tcp.Socket(ip, port)`, connect it with `socket.connect()` and send data with `socket.send('hello world')`. You don't need to pass a callback on each method call, since calls will be ordered in a async-pipeline fashion. For optimization purposes, there is a JS side buffer. When you call `flush` or `close`, data will be sent from JS to native and then to network. To read data from a socket is necessary to pass a callback to get received data, like `socket.read(callback)`
+**tcp** module has an object-oriented interface for creating TCP Sockets. You can create a socket with `var socket = new forge.tcp.Socket(ip, port)`, connect it with `socket.connect()` and send data with `socket.send('hello world')`. You don't need to pass a callback on each method call, since calls will be ordered in a async-pipeline fashion. For optimization purposes, there is a JS side buffer. When you call `flush` or `close`, data will be sent from JS to native and then to network. To read data from a socket is necessary to pass a callback to get received data, like `socket.read(callback)`
 
 ### Example
 ```javascript
