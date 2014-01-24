@@ -8,7 +8,7 @@ trigger.io module for TCP sockets (android-only for now)
 
 ### Example
 ```javascript
-var socket = new forge.tcp.Socket('127.0.0.1', '7070');
+var socket = new forge.tcp.Socket('10.0.2.2', 7070);
 socket.connect();
 socket.send('hello world');
 socket.flush();
@@ -20,7 +20,7 @@ socket.read(function (data) {
 
 ## Object-oriented API
 ### creating a socket
-Use the `forge.tcp.Socket(ip, port, config)` constructor. `ip` must be a string and `port` an integer. `config` is optional. Don't forget the `new`:
+Use the `forge.tcp.Socket(ip, port, config)` constructor. `ip` must be a string and `port` an integer. `config` is optional. Don't forget the `new` keyword. Also, don't forget to `connect` it afterwards:
 ```javascript
 var socket = new forge.tcp.Socket('10.0.2.2', 7);
 ```
@@ -38,6 +38,9 @@ The `config` also support the following socket events:
 ### socket methods
 When you call a socket method, this call will be queued to the socket pipeline. This means you can call `send`, `flush`, `close` without using callbacks. The call will return immediately, but will be executed when the previous operation is completed, meaning that call order is preserved. Only `read` method needs a callback to get received data. See the [example in Usage](#example) section above
 
+#### connecting
+Use the `socket.connect()` to connect a socket to the server
+
 #### sending data
 Use the `socket.send(data)` method. `data` must be a string and will be encoded as `config.charset` bytes before is sent to network:
 ```javascript
@@ -53,10 +56,12 @@ socket.flush();
 
 #### reading data
 Use the `socket.read(function (data) { ... })` method. `data` is the received data as string, decoded from bytes with `config.charset`:
+```javascript
 socket.read(function (data) {
     // do something with data...
     // call more socket methods...
 });
+```
 
 #### closing the socket
 Use the `socket.close()` method when you are done with it
