@@ -26,7 +26,7 @@ var socket = new forge.tcp.Socket('10.0.2.2', 7);
 ```
 To customize the socket, use the `config` argument. `config` is a object that supports the following properties and defaults:  
 
-* `config.charset = 'UTF-8'` Java Charset in which data will be encoded/decoded when the socket send/read data. This has nothing to do with JS or Java internal string encoding. This charset is needed because data will be sent/read as bytes in the native socket
+* `config.charset = 'UTF-8'` Java [Charset](http://docs.oracle.com/javase/6/docs/api/java/nio/charset/Charset.html) in which data will be encoded/decoded when the socket send/read data. This has nothing to do with JS or Java internal string encoding. This charset is needed because data will be sent/read as bytes in the native socket
 * `config.connectionTimeout = 30000` connection timeout in ms
 * `config.maxBufferLength = 65536` JS buffer length in JS chars. Data is buffered in JS side to avoid unnecessary repeated calls to the resource-intensive native bridge. Use `flush` method when you need to send data to native side without filling the buffer
 
