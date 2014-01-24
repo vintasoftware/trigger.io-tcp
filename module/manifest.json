@@ -4,5 +4,6 @@
 	"namespace": "tcp",
 	"platform_version": "v2.1.0",
 	"version": "0.6.2",
-	"dependencies": {}
+	"dependencies": {},
+	"changes": "First public version"
 }
